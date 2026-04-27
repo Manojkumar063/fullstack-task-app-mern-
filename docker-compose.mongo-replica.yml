@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # MongoDB Replica Set
+  mongo-primary:
+    image: mongo:7
+    container_name: mongo-primary
+    restart: always
+    command: mongod --replSet rs0 --bind_ip_all
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo_primary_data:/data/db
+    networks:
+      - mern-network
+    ports:
+      - "27017:27017"
+
+  mongo-secondary-1:
+    image: mongo:7
+    container_name: mongo-secondary-1
+    restart: always
+    command: mongod --replSet rs0 --bind_ip_all
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo_secondary_1_data:/data/db
+    networks:
+      - mern-network
+    depends_on:
+      - mongo-primary
+
+  mongo-secondary-2:
+    image: mongo:7
+    container_name: mongo-secondary-2
+    restart: always
+    command: mongod --replSet rs0 --bind_ip_all
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo_secondary_2_data:/data/db
+    networks:
+      - mern-network
+    depends_on:
+      - mongo-primary
+
+  # Initialize replica set
+  mongo-init:
+    image: mongo:7
+    container_name: mongo-init
+    restart: "no"
+    depends_on:
+      - mongo-primary
+      - mongo-secondary-1
+      - mongo-secondary-2
+    networks:
+      - mern-network
+    command: >
+      mongosh --host mongo-primary:27017 -u ${MONGO_USERNAME} -p ${MONGO_PASSWORD} --authenticationDatabase admin --eval '
+      rs.initiate({
+        _id: "rs0",
+        members: [
+          { _id: 0, host: "mongo-primary:27017", priority: 2 },
+          { _id: 1, host: "mongo-secondary-1:27017", priority: 1 },
+          { _id: 2, host: "mongo-secondary-2:27017", priority: 1 }
+        ]
+      })'
+
+volumes:
+  mongo_primary_data:
+  mongo_secondary_1_data:
+  mongo_secondary_2_data:
+
+networks:
+  mern-network:
+    driver: bridge

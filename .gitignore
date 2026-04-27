@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+**/.env
+.env.local
+**/.env.local
+.env.production
+**/.env.production
+
+# Logs
+logs/
+*.log
+**/logs/
+
+# Build outputs
+build/
+dist/
+out/
+.next/
+**/.next/
+
+# OS
+.DS_Store
+Thumbs.db
